@@ -375,18 +375,35 @@ class Preprocessor:
 
             # 6. Pad to square
             h, w = normalized.shape
+            # Add dimension validation
+            if h == 0 or w == 0:
+                print(f"Invalid dimensions after cropping: {h}x{w}")
+                return None
+
+            # Ensure square padding works for all aspect ratios
             max_dim = max(h, w)
             padded = np.zeros((max_dim, max_dim), dtype=np.uint8)
             y_offset = (max_dim - h) // 2
             x_offset = (max_dim - w) // 2
-            padded[y_offset:y_offset+h, x_offset:x_offset+w] = normalized
+
+            # Handle cases where offset + dimension exceeds bounds
+            padded[
+                max(0, y_offset):min(y_offset+h, max_dim),
+                max(0, x_offset):min(x_offset+w, max_dim)
+            ] = normalized[
+                max(0, -y_offset):min(h, max_dim-y_offset),
+                max(0, -x_offset):min(w, max_dim-x_offset)
+            ]
 
             # 7. Resize
             resized = cv2.resize(padded, resize_shape,
-                                    interpolation=cv2.INTER_AREA)
+                                 interpolation=cv2.INTER_AREA)
+
+            # 8. Convert grayscale to 3-channel RGB
+            resized_rgb = cv2.cvtColor(resized, cv2.COLOR_GRAY2RGB)
 
             # 8. Return processed image
-            return resized
+            return resized_rgb
 
         except Exception as e:
             print(f"Error processing {image}: {str(e)}")
