@@ -1,1 +1,8 @@
 opencv-python
+
+tensorflow==2.16.2
+
+#API
+fastapi
+uvicorn
+python-multipart
