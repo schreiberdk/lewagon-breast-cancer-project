@@ -23,7 +23,7 @@ def load_model():
 
     print("\nLoading latest model from disk...")
 
-    latest_model = tf.keras.models.load_model(most_recent_model_path_on_disk)
+    latest_model = tf.keras.models.load_model(most_recent_model_path_on_disk) # type: ignore
 
     print("✅ Model loaded")
 
