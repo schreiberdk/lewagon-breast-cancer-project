@@ -26,9 +26,11 @@ async def receive_image(img: UploadFile=File(...)):
     print(f'Image type after opening with io.Bytes: {type(contents)}')
     contents = img_to_array(contents)
     print(f'Image type after img_to_array conversion: {type(contents)}')
+    print(f'Image shape after img_to_array conversion: {contents.shape}')
     preprocessor = app.state.preprocessor
     image = preprocessor.preprocess_image(contents)
     print(f'Image type after preprocessing: {type(image)}')
+    print(f'Image shape after preprocessing: {image.shape}')
     # contents = contents.reshape((-1, 224, 224, 3))
     # model = app.state.model
     # res = model.predict(image)
