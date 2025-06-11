@@ -27,6 +27,7 @@ class Preprocessor:
         """
 
     ## Support functions for preprocessing
+    @staticmethod
     def is_black_on_white(image, threshold=0.6):
         """
         Determines if the image is black-on-white (i.e., most pixels are bright).
@@ -42,6 +43,7 @@ class Preprocessor:
         total_pixels = gray.size
         return (bright_pixels / total_pixels) > threshold
 
+    @staticmethod
     def invert_if_black_on_white(image):
         """
         Inverts the image if it is black-on-white.
@@ -50,6 +52,7 @@ class Preprocessor:
             return cv2.bitwise_not(image)
         return image
 
+    @staticmethod
     def detect_breast_region(image, return_only_cropped_image = False):
         """
         Enhanced gradient-based detection with multiple refinements
@@ -113,7 +116,7 @@ class Preprocessor:
 
         # Step 6: Hole filling and region refinement
         # Fill holes using scipy
-        filled = ndimage.binary_fill_holes(combined).astype(np.uint8) * 255
+        filled = ndimage.binary_fill_holes(combined).astype(np.uint8) * 255 # type: ignore
 
         # Step 7: Advanced contour filtering
         contours, _ = cv2.findContours(filled, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -151,7 +154,7 @@ class Preprocessor:
 
                 # Create refined mask
                 mask = np.zeros_like(gray)
-                cv2.fillPoly(mask, [best_contour], 255)
+                cv2.fillPoly(mask, [best_contour], 255) # type: ignore
 
                 # Post-process mask to smooth boundaries
                 mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_open)
@@ -168,6 +171,7 @@ class Preprocessor:
             return None, None, None  # Tuple for mask/bbox/contour
 
     ## Main preprocessing function
+    @staticmethod
     def preprocess_dataset(input_dir, output_dir,
                            resize_shape=(224, 224),
                            apply_clahe=True,
@@ -239,7 +243,7 @@ class Preprocessor:
                         cropped = img  # Fallback to original if detection fails
 
                     # 5. Normalize
-                    normalized = cv2.normalize(cropped, None, 0, 255, cv2.NORM_MINMAX)
+                    normalized = cv2.normalize(cropped, None, 0, 255, cv2.NORM_MINMAX) # type: ignore
 
                     # 6. Increase contrast with CLAHE (if specified)
                     if apply_clahe:
@@ -275,6 +279,7 @@ class Preprocessor:
         print(f"Successfully processed: {processed_count} images")
         print(f"Failed: {failed_count} images")
 
+    @staticmethod
     def preprocess_image(image,
                          resize_shape=(224, 224),
                          apply_clahe=True,
@@ -344,7 +349,7 @@ class Preprocessor:
                 cropped = img  # Fallback to original if detection fails
 
             # 4. Normalize
-            normalized = cv2.normalize(cropped, None, 0, 255, cv2.NORM_MINMAX)
+            normalized = cv2.normalize(cropped, None, 0, 255, cv2.NORM_MINMAX) # type: ignore
 
             # 5. Increase contrast with CLAHE (if specified)
             if apply_clahe:
