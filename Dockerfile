@@ -1,6 +1,6 @@
 FROM python:3.10.6-buster
 
-COPY fast_api fast_api
+COPY classification.fast_api fast_api
 COPY requirements.txt requirements.txt
 
 RUN pip install --upgrade pip
