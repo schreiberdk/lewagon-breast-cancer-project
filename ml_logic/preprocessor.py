@@ -9,18 +9,22 @@ from scipy import ndimage
 
 class Preprocessor:
     """
-    [PLACEHOLDER]
+    Preprocessor class for mammogram images.
+    This class provides methods to preprocess mammogram images for machine learning tasks.
+    It includes functionality for:
+    - Detecting breast regions using advanced gradient-based methods
+    - Inverting black-on-white images
+    - Normalizing pixel values
+    - Applying CLAHE contrast enhancement
+    - Padding images to square dimensions
+    - Resizing images to target dimensions
+    - Saving processed images in a structured output directory
     """
 
-    def __init__(self, config=None):
+    def __init__(self):
         """
         Initialize the preprocessor with optional configuration.
-        Args:
-            config (dict): Optional configuration parameters.
         """
-        self.config = config
-        # Initialize any transformers or parameters here
-        # Example: self.scaler = StandardScaler()
 
     ## Support functions for preprocessing
     def is_black_on_white(image, threshold=0.6):
