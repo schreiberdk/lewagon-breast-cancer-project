@@ -65,6 +65,12 @@ class Preprocessor:
 
         # Step 1: Advanced preprocessing (as mentioned in research)
         # Density-weighted contrast enhancement (DWCE)
+        # NEW: Ensure image is uint8 with proper scaling
+        if gray.dtype != np.uint8:
+            if gray.max() <= 1.0:  # Handle normalized [0,1] float images
+                gray = (gray * 255).astype(np.uint8)
+            else:  # Handle other data types (e.g., uint16)
+                gray = cv2.normalize(gray, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
         clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
         enhanced = clahe.apply(gray)
 
@@ -295,7 +301,7 @@ class Preprocessor:
         5. Applies CLAHE contrast enhancement if specified
         6. Pads images to square
         7. Resizes to target dimensions
-        8. Saves processed images in the output directory
+        8. Return processed image as NumPy array
 
         Args:
             image: Input image (as file path)
@@ -331,8 +337,18 @@ class Preprocessor:
         # Case 2: Input is a NumPy array
         elif isinstance(image, np.ndarray):
             img = image
+
+        # Case 3: File-like object (e.g., BytesIO)
+        elif hasattr(image, 'read'):
+            # Read bytes, convert to numpy array, decode with OpenCV
+            file_bytes = np.frombuffer(image.read(), np.uint8)
+            img = cv2.imdecode(file_bytes, cv2.IMREAD_GRAYSCALE)
+            if img is None:
+                print("Could not decode image from file-like object")
+                return None
+
         else:
-            print("Input must be a file path (str) or a NumPy array")
+            print("Input must be a file path (str), a NumPy array, or a file-like object")
             return None
 
         if img is None:
