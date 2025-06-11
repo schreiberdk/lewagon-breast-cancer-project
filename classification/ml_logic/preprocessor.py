@@ -371,24 +371,6 @@ class Preprocessor:
             print(f"Error processing {image}: {str(e)}")
             return None
 
-# Helper function to maintain compatibility
-def is_black_on_white(image, threshold=0.7):
-    """Determines if image is black-on-white format"""
-    bright_pixels = np.sum(image > 127)
-    return (bright_pixels / image.size) > threshold
-
-
-# Utility functions (optional)
-def load_data(filepath):
-    """
-    Utility function to load data from a file.
-    Args:
-        filepath (str): Path to the data file.
-    Returns:
-        pd.DataFrame: Loaded data.
-    """
-    return pd.read_csv(filepath)
-
 # If you want to allow running as a script
 if __name__ == "__main__":
     # PLACEHOLDER
