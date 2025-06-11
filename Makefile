@@ -2,7 +2,7 @@
 #################### PACKAGE ACTIONS ###################
 
 reinstall_package:
-	@pip uninstall -y taxifare || :
+	@pip uninstall -y classification || :
 	@pip install -e .
 
 run_pred:
