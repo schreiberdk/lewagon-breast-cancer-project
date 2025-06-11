@@ -1,1 +1,15 @@
-opencv-python
+opencv-contrib-python
+pandas
+numpy
+matplotlib
+
+tensorflow==2.16.2
+
+#API
+fastapi
+uvicorn
+python-multipart
+
+# Preprocessing
+scipy
+pydicom
