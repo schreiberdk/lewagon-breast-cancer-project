@@ -1,7 +1,16 @@
 FROM python:3.10.6-buster
 
-COPY classification.fast_api fast_api
+# Install HDF5 and libGL for OpenCV
+RUN apt-get update && apt-get install -y \
+    libhdf5-dev \
+    libgl1 \
+    && apt-get clean
+
+COPY fast_api fast_api
 COPY requirements.txt requirements.txt
+COPY classification classification
+COPY segmentation segmentation
+COPY models models
 
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
