@@ -2,6 +2,8 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import StreamingResponse
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
+from classification.ml_logic.preprocessor import Preprocessor
+from segmentation.ml_logic.preprocessor import Preprocessor
 import numpy as np
 from PIL import Image
 import io
@@ -9,9 +11,6 @@ from io import BytesIO
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
-from classification.ml_logic.preprocessor import Preprocessor
-from segmentation.ml_logic.preprocessor import Preprocessor
 
 app = FastAPI()
 
@@ -22,7 +21,8 @@ def index():
 
 
 # --------------------------- CLASSIFICATION -----------------------------------
-app.state.model = load_model("models/InceptionV3_Breast_Cancer.keras")
+app.state.modelclass = load_model("models/InceptionV3_Breast_Cancer.keras",
+                                compile=False)
 app.state.preprocessor = Preprocessor()
 
 @app.post('/classification')
@@ -46,7 +46,7 @@ async def receive_image(img: UploadFile=File(...)):
     contents = contents.reshape((-1, 224, 224, 3))
 
     # Prediction
-    model = app.state.model
+    model = app.state.modelclass
     res = model.predict(contents)
     prob = float(res)*100
     return  {"Probability of Malignant Breast Cancer": f"{round(prob,2)}%"}
@@ -54,6 +54,8 @@ async def receive_image(img: UploadFile=File(...)):
 
 
 # --------------------------- SEGMENTATION ------------------------------------
+app.state.modelseg = load_model("models/unet_seg_model_11_6_2025_2.keras",
+                                compile=False)
 def plot_overlay(image, mask, alpha=0.5, mask_color='Reds'):
     """
     image: numpy array, shape (H, W, 3)
@@ -87,7 +89,7 @@ async def receive_image(img: UploadFile=File(...)):
 
     # Prediction
     #import ipdb; ipdb.set_trace()
-    model = app.state.model
+    model = app.state.modelseg
     res = model.predict(img_for_model)
     res_binary = (res > 0.5).astype(np.uint8).squeeze()
     return plot_overlay(img_array, res_binary)
