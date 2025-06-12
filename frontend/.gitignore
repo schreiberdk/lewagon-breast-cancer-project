@@ -18,6 +18,8 @@
 
 # Raw data
 raw_data/
+masks/
+images/
 *.csv
 *.sqlite
 *.zip
