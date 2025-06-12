@@ -2,8 +2,11 @@ opencv-python
 pandas
 numpy
 matplotlib
+notebook
 
 tensorflow==2.16.2
+scikit-learn
+openpyxl
 
 #API
 fastapi

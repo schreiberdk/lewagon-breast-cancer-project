@@ -21,7 +21,7 @@ def index():
 
 
 # --------------------------- CLASSIFICATION -----------------------------------
-app.state.modelclass = load_model("models/InceptionV3_Breast_Cancer.keras",
+app.state.modelclass = load_model("models/CNN_Breast_Cancer.keras",
                                 compile=False)
 app.state.preprocessor = Preprocessor()
 
