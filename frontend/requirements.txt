@@ -1,3 +1,4 @@
 # Sreamlit and extensions
-streamlit
+streamlit==1.40.0
+streamlit_drawable_canvas
 requests
