@@ -10,9 +10,9 @@ app = FastAPI()
 
 @app.get("/")
 def index():
-    return {"status": "I like big b**bs and I can not lie.🍉🍈🍒"}
+    return {"status": "Up and running."}
 
-app.state.model = load_model("models/CNN_Breast_Cancer.keras")
+app.state.model = load_model("models/InceptionV3_Breast_Cancer.keras")
 app.state.preprocessor = Preprocessor()
 
 @app.post('/upload_image')
@@ -38,4 +38,4 @@ async def receive_image(img: UploadFile=File(...)):
     # Prediction
     model = app.state.model
     res = model.predict(contents)
-    return  {"probability of for malignant BC:": round(float(res),2)}
+    return  {"Probability of Malignant Brest Cancer": f"{round(float(res),4)*100}%"}
