@@ -354,48 +354,51 @@ class Preprocessor:
         if img is None:
             raise ValueError(f"Could not read image from {image}")
 
-        print(f'Image shape after reading: {img.shape}')
-        print(f'Maximum pixel value after reading: {img.max()}')
-        print(f'Minimum pixel value after reading: {img.min()}')
-        print(f'Image dtype after reading: {img.dtype}')
+        # print(f'Image shape after reading: {img.shape}')
+        # print(f'Maximum pixel value after reading: {img.max()}')
+        # print(f'Minimum pixel value after reading: {img.min()}')
+        # print(f'Image dtype after reading: {img.dtype}')
 
         # Convert to uint8 if necessary
         if img.dtype == np.float32 or img.dtype == np.float64:
             img = np.clip(img, 0, 255)
             img = img.astype(np.uint8)
-        print(f'Image shape after normalization: {img.shape}')
-        print(f'Maximum pixel value after normalization: {img.max()}')
-        print(f'Minimum pixel value after normalization: {img.min()}')
-        print(f'Image dtype after normalization: {img.dtype}')
+        # print(f'Image shape after normalization: {img.shape}')
+        # print(f'Maximum pixel value after normalization: {img.max()}')
+        # print(f'Minimum pixel value after normalization: {img.min()}')
+        # print(f'Image dtype after normalization: {img.dtype}')
 
         # Convert to grayscale if needed
         if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)# Convert 3-channel → 1-channel
 
-        print(f'Image shape after grayscale: {img.shape}')
-        print(f'Maximum pixel value after grayscale: {img.max()}')
-        print(f'Minimum pixel value after grayscale: {img.min()}')
-        print(f'Image dtype after grayscale: {img.dtype}')
+        # print(f'Image shape after grayscale: {img.shape}')
+        # print(f'Maximum pixel value after grayscale: {img.max()}')
+        # print(f'Minimum pixel value after grayscale: {img.min()}')
+        # print(f'Image dtype after grayscale: {img.dtype}')
+
+        failed_count = 0
 
         try:
             # 2. Invert if black-on-white
             img = Preprocessor.invert_if_black_on_white(img)
-            print(f'Image shape after 2. inversion: {img.shape}')
-            print(f'Image dtype after 2. inversion: {img.dtype}')
+            # print(f'Image shape after 2. inversion: {img.shape}')
+            # print(f'Image dtype after 2. inversion: {img.dtype}')
 
             # 3. Crop breast region
             cropped = Preprocessor.detect_breast_region(img, return_only_cropped_image=True)
-            print(f'Image shape after 3. breast region detection: {cropped.shape if cropped is not None else "None"}')
-            print(f'Image dtype after 3. breast region detection: {cropped.dtype if cropped is not None else "None"}')
+            # print(f'Image shape after 3. breast region detection: {cropped.shape if cropped is not None else "None"}')
+            # print(f'Image dtype after 3. breast region detection: {cropped.dtype if cropped is not None else "None"}')
             if cropped is None:
-                print(f"Breast region detection failed for {image}, using original image.")
+                failed_count += 1
+                print(f"Breast region detection failed for {failed_count} images, using original image.")
                 cropped = img  # Fallback to original if detection fails
 
             # 4. Increase contrast with CLAHE (if specified)
             if apply_clahe:
                 if cropped.dtype != np.uint8:
                     cropped = np.clip(cropped, 0, 255).astype(np.uint8)
-                print(f'Image dtype before 5. CLAHE: {cropped.dtype}')
+                # print(f'Image dtype before 5. CLAHE: {cropped.dtype}')
 
                 # Check for contrast variation
                 if np.ptp(cropped) == 0:  # All pixels identical
@@ -403,17 +406,17 @@ class Preprocessor:
                 else:
                     clahe = cv2.createCLAHE(clipLimit=clahe_clip_limit, tileGridSize=(8,8))
                     cropped = clahe.apply(cropped)
-                print(f'Image shape after 5. CLAHE: {cropped.shape}')
-                print(f'Maximum pixel value after 5. CLAHE: {cropped.max()}')
-                print(f'Minimum pixel value after 5. CLAHE: {cropped.min()}')
-                print(f'Image dtype after 5. CLAHE: {cropped.dtype}')
+                # print(f'Image shape after 5. CLAHE: {cropped.shape}')
+                # print(f'Maximum pixel value after 5. CLAHE: {cropped.max()}')
+                # print(f'Minimum pixel value after 5. CLAHE: {cropped.min()}')
+                # print(f'Image dtype after 5. CLAHE: {cropped.dtype}')
 
             # 5. Normalize to [0, 1] for ML models
             normalized = cv2.normalize(cropped, None, 0, 1, cv2.NORM_MINMAX).astype(np.float32) # type: ignore
-            print(f'Image shape after 4. normalization: {normalized.shape}')
-            print(f'Maximum pixel value after 4. normalization: {normalized.max()}')
-            print(f'Minimum pixel value after 4. normalization: {normalized.min()}')
-            print(f'Image dtype after 4. normalization: {normalized.dtype}')
+            # print(f'Image shape after 4. normalization: {normalized.shape}')
+            # print(f'Maximum pixel value after 4. normalization: {normalized.max()}')
+            # print(f'Minimum pixel value after 4. normalization: {normalized.min()}')
+            # print(f'Image dtype after 4. normalization: {normalized.dtype}')
 
             # 6. Pad to square
             h, w = normalized.shape
@@ -424,16 +427,16 @@ class Preprocessor:
 
             # Ensure square padding works for all aspect ratios
             max_dim = max(h, w)
-            if max_dim == h:
-                print(f'Padding width {w} to match height {h}')
-            else:
-                print(f'Padding height {h} to match width {w}')
-            print(f'Maximum dimension for padding: {max_dim}')
+            # if max_dim == h:
+                # print(f'Padding width {w} to match height {h}')
+            # else:
+                # print(f'Padding height {h} to match width {w}')
+            # print(f'Maximum dimension for padding: {max_dim}')
             padded = np.zeros((max_dim, max_dim), dtype=np.uint8)
-            print(f'Padded shape: {padded.shape}')
-            print(f'Maximum pixel value in padded: {padded.max()}')
-            print(f'Minimum pixel value in padded: {padded.min()}')
-            print(f'Image dtype after padding: {padded.dtype}')
+            # print(f'Padded shape: {padded.shape}')
+            # print(f'Maximum pixel value in padded: {padded.max()}')
+            # print(f'Minimum pixel value in padded: {padded.min()}')
+            # print(f'Image dtype after padding: {padded.dtype}')
             y_offset = (max_dim - h) // 2
             x_offset = (max_dim - w) // 2
 
@@ -449,17 +452,17 @@ class Preprocessor:
             # 7. Resize
             resized = cv2.resize(padded, resize_shape,
                                  interpolation=cv2.INTER_AREA)
-            print(f'Image shape after 7. resizing: {resized.shape}')
-            print(f'Maximum pixel value after 7. resizing: {resized.max()}')
-            print(f'Minimum pixel value after 7. resizing: {resized.min()}')
-            print(f'Image dtype after 7. resizing: {resized.dtype}')
+            # print(f'Image shape after 7. resizing: {resized.shape}')
+            # print(f'Maximum pixel value after 7. resizing: {resized.max()}')
+            # print(f'Minimum pixel value after 7. resizing: {resized.min()}')
+            # print(f'Image dtype after 7. resizing: {resized.dtype}')
 
             # 8. Convert grayscale to 3-channel RGB (for ML models)
             resized_rgb = cv2.cvtColor((resized * 255).astype(np.uint8), cv2.COLOR_GRAY2RGB)
-            print(f'Image shape after 8. RGB conversion: {resized_rgb.shape}')
-            print(f'Maximum pixel value after 8. RGB conversion: {resized_rgb.max()}')
-            print(f'Minimum pixel value after 8. RGB conversion: {resized_rgb.min()}')
-            print(f'Image dtype after 8. RGB conversion: {resized_rgb.dtype}')
+            # print(f'Image shape after 8. RGB conversion: {resized_rgb.shape}')
+            # print(f'Maximum pixel value after 8. RGB conversion: {resized_rgb.max()}')
+            # print(f'Minimum pixel value after 8. RGB conversion: {resized_rgb.min()}')
+            # print(f'Image dtype after 8. RGB conversion: {resized_rgb.dtype}')
 
             # 8. Return processed image
             return resized_rgb
