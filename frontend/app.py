@@ -1,49 +1,56 @@
 import os
 import streamlit as st
+import requests
 
-
-# Define the base URI of the API
-#   - Potential sources are in `.streamlit/secrets.toml` or in the Secrets
-#     section on Streamlit Cloud
-#   - The source selected is based on the shell variable passend when launching
-#     streamlit (shortcuts are included in Makefile). By default it takes the
-#     cloud API url
-if 'API_URI' in os.environ:
-    BASE_URI = st.secrets[os.environ.get('API_URI')]
-else:
-    BASE_URI = st.secrets['cloud_api_uri']
-# Add a '/' at the end if it's not there
+# Load API base URI from secrets or environment
+api_key = os.environ.get('API_URI', 'local_api_uri')
+BASE_URI = st.secrets.get(api_key)
 BASE_URI = BASE_URI if BASE_URI.endswith('/') else BASE_URI + '/'
-# Define the url to be used by requests.get to get a prediction (adapt if needed)
-url = BASE_URI + 'predict'
 
-# Just displaying the source for the API. Remove this in your final version.
-st.markdown(f"Working with {url}")
+st.title("Medical Imaging AI App 🧠")
+st.markdown(f"Backend: `{BASE_URI}`")
 
-st.markdown("Now, the rest is up to you. Start creating your page.")
+st.markdown("Upload a medical image and select a task (classification or segmentation).")
 
+# Upload image
+uploaded_file = st.file_uploader("Upload an image (PNG/JPG)", type=['png', 'jpg', 'jpeg'])
 
-# TODO: Add some titles, introduction, ...
+# Task selection
+task = st.selectbox("Select a task", ["Classification", "Segmentation"])
 
+if uploaded_file and task:
+    endpoint = "classification" if task == "Classification" else "segmentation"
+    url = BASE_URI + endpoint
 
-# TODO: Request user input
+    st.markdown(f"**Sending request to:** `{url}`")
 
+    with st.spinner("Processing..."):
+        try:
+            files = {'img': uploaded_file}
+            response = requests.post(url, files=files)
+        except Exception as e:
+            st.error(f"❌ Failed to contact API: {e}")
+            st.stop()
 
-# TODO: Call the API using the user's input
-#   - url is already defined above
-#   - create a params dict based on the user's input
-#   - finally call your API using the requests package
+        if response.status_code != 200:
+            st.error(f"❌ API error {response.status_code}: {response.text}")
+            st.stop()
 
+        # ✅ Classification result
+        if task == "Classification":
+            try:
+                result = response.json()
+                prob = result.get("probability of for malignant BC")
 
-# TODO: retrieve the results
-#   - add a little check if you got an ok response (status code 200) or something else
-#   - retrieve the prediction from the JSON
+                if prob is None:
+                    st.error("✅ API returned successfully, but no probability was found in the response.")
+                    st.write("Full response:", result)
+                else:
+                    st.success(f"🎯 Prediction: **{prob * 100:.2f}% malignant**")
+            except Exception as e:
+                st.error(f"❌ Failed to parse prediction response: {e}")
+                st.write("Raw response content:", response.text)
 
-
-# TODO: display the prediction in some fancy way to the user
-
-
-# TODO: [OPTIONAL] maybe you can add some other pages?
-#   - some statistical data you collected in graphs
-#   - description of your product
-#   - a 'Who are we?'-page
+        # ✅ Segmentation result (image)
+        elif task == "Segmentation":
+            st.image(response.content, caption="🩺 Segmentation Output", use_column_width=True)
