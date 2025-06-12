@@ -5,7 +5,7 @@ from tensorflow.keras.preprocessing.image import img_to_array
 from classification.ml_logic.preprocessor import Preprocessor
 from segmentation.ml_logic.preprocessor import Preprocessor
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 import io
 from io import BytesIO
 import matplotlib
@@ -21,6 +21,7 @@ def index():
 
 
 # --------------------------- CLASSIFICATION -----------------------------------
+
 app.state.modelclass = load_model("models/CNN_Breast_Cancer2.keras",
                                 compile=False)
 app.state.preprocessor = Preprocessor()
@@ -82,6 +83,8 @@ async def receive_image(img: UploadFile=File(...)):
     contents = await img.read()
     pil_image = Image.open(io.BytesIO(contents)).convert("RGB")
     pil_image = pil_image.resize((224, 224))
+    if app.state.preprocessor.is_black_on_white(img_to_array(pil_image)):
+                pil_image = ImageOps.invert(pil_image)
     #import ipdb; ipdb.set_trace()
     # Step 2: Preprocess image
     img_array = img_to_array(pil_image) / 255.0  # shape: (224, 224, 3)
