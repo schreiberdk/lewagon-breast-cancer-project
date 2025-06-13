@@ -19,7 +19,7 @@ def image_to_data_url(img: Image.Image) -> str:
 st.title("🖌️ Draw Your Own Cancer Mask")
 
 # --- List available image files ---
-image_files = sorted(glob.glob("images/*.png"))  # or .jpg, etc.
+image_files = sorted(glob.glob("frontend/images/*.png"))  # or .jpg, etc.
 
 if not image_files:
     st.error("No images found in 'images/' folder.")
@@ -32,8 +32,8 @@ image_names = [os.path.basename(path) for path in image_files]
 selected_image_name = st.selectbox("Select an image to annotate", image_names)
 
 # Build paths for selected image and corresponding mask
-selected_image_path = os.path.join("images", selected_image_name)
-selected_mask_path = os.path.join("masks", selected_image_name)  # assumes mask has same filename in 'masks/'
+selected_image_path = os.path.join("frontend/images", selected_image_name)
+selected_mask_path = os.path.join("frontend/masks", selected_image_name)  # assumes mask has same filename in 'masks/'
 
 # Check files exist
 if not os.path.exists(selected_image_path) or not os.path.exists(selected_mask_path):
