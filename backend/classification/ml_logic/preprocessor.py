@@ -176,6 +176,38 @@ class Preprocessor:
         else:
             return None, None, None  # Tuple for mask/bbox/contour
 
+    @staticmethod
+    def detect_breast_region_optimized(image):
+        """Fast, robust breast detection using adaptive thresholding + region growing"""
+        # Convert to uint8 if needed
+        if image.dtype != np.uint8:
+            image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+
+        # 1. Median filter for noise removal (faster than bilateral)
+        denoised = cv2.medianBlur(image, 5)
+
+        # 2. CLAHE with optimized params from [8]
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16,16))
+        enhanced = clahe.apply(denoised)
+
+        # 3. Adaptive thresholding using Otsu's method
+        _, thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+        # 4. Largest connected component (fast alternative to contours)
+        num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(thresh, 4, cv2.CV_32S)
+        if num_labels < 2:
+            return None  # No breast region found
+
+        # Get largest component excluding background
+        largest_label = np.argmax(stats[1:, cv2.CC_STAT_AREA]) + 1
+        mask = (labels == largest_label).astype(np.uint8) * 255
+
+        # 5. Morphological refinement (optimized kernel sizes)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15,15))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+        return mask
+
     ## Main preprocessing function
     @staticmethod
     def preprocess_dataset(input_dir, output_dir,
@@ -377,8 +409,6 @@ class Preprocessor:
         # print(f'Minimum pixel value after grayscale: {img.min()}')
         # print(f'Image dtype after grayscale: {img.dtype}')
 
-        failed_count = 0
-
         try:
             # 2. Invert if black-on-white
             img = Preprocessor.invert_if_black_on_white(img)
@@ -386,12 +416,19 @@ class Preprocessor:
             # print(f'Image dtype after 2. inversion: {img.dtype}')
 
             # 3. Crop breast region
-            cropped = Preprocessor.detect_breast_region(img, return_only_cropped_image=True)
+            # cropped = Preprocessor.detect_breast_region(img, return_only_cropped_image=True)
+            cropped = Preprocessor.detect_breast_region_optimized(img)
             # print(f'Image shape after 3. breast region detection: {cropped.shape if cropped is not None else "None"}')
             # print(f'Image dtype after 3. breast region detection: {cropped.dtype if cropped is not None else "None"}')
+            # if cropped is None:
+                # Simple intensity thresholding fallback
+                # print(f"Breast region detection failed for {img}, using fallback method.")
+                # _, thresh_fallback = cv2.threshold(img, 0.1*255, 255, cv2.THRESH_BINARY)
+                # cropped = largest_connected_component(thresh_fallback)
+
             if cropped is None:
-                failed_count += 1
-                print(f"Breast region detection failed for {failed_count} images, using original image.")
+                # If breast region detection fails, use original image
+                print(f"Breast region detection failed for {img} images, using original image.")
                 cropped = img  # Fallback to original if detection fails
 
             # 4. Increase contrast with CLAHE (if specified)
