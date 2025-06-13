@@ -1,0 +1,7 @@
+# Streamlit and extensions
+streamlit==1.40.0
+streamlit-drawable-canvas
+requests
+matplotlib
+pillow
+numpy
