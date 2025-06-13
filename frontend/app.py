@@ -3,7 +3,7 @@ import streamlit as st
 import requests
 
 # Load API base URI from secrets or environment
-api_key = os.environ.get('API_URI', 'local_api_uri')
+api_key = os.environ.get('API_URI', 'cloud_api_uri')
 BASE_URI = st.secrets.get(api_key)
 BASE_URI = BASE_URI if BASE_URI.endswith('/') else BASE_URI + '/'
 
@@ -40,7 +40,7 @@ if uploaded_file and task:
         if task == "Classification":
             try:
                 result = response.json()
-                prob = result.get("probability of for malignant BC")
+                prob = result.get("Probability of Malignant Breast Cancer")
 
                 if prob is None:
                     st.error("✅ API returned successfully, but no probability was found in the response.")
