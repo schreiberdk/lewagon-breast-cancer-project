@@ -47,9 +47,10 @@ async def receive_image(img: UploadFile=File(...)):
 
     # Prediction
     model = app.state.modelclass
-    res = model.predict(contents)
-    prob = float(res)*100
-    return  {"Probability of Malignant Breast Cancer": f"{round(prob,2)}%"}
+    res = str(model.predict(contents)[-1][-1])
+    return {"probability":res}
+
+    # return  {"Probability of Malignant Breast Cancer": f"{round(prob,2)}%"}
 
 
 
