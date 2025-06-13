@@ -1,10 +1,7 @@
-# Sreamlit and extensions
+# Streamlit and extensions
 streamlit==1.40.0
-streamlit_drawable_canvas
+streamlit-drawable-canvas
 requests
 matplotlib
-PIL
-io
-base64
+pillow
 numpy
-glob
