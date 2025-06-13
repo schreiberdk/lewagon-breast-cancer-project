@@ -2,3 +2,9 @@
 streamlit==1.40.0
 streamlit_drawable_canvas
 requests
+matplotlib
+PIL
+io
+base64
+numpy
+glob
