@@ -259,50 +259,10 @@ class Preprocessor:
                 output_path = os.path.join(current_out_dir, file)
 
                 try:
-                    # 2. Read image (handle DICOM and standard formats)
-                    if input_path.lower().endswith('.dcm'):
-                        ds = pydicom.dcmread(input_path)
-                        img = ds.pixel_array.astype(np.float32)
-                        img = (img - img.min()) / (img.max() - img.min()) * 255
-                        img = img.astype(np.uint8)
-                    else:
-                        img = cv2.imread(input_path, cv2.IMREAD_GRAYSCALE)
-
-                    if img is None:
-                        raise ValueError(f"Could not read image from {input_path}")
-
-                    # 3. Invert if black-on-white
-                    img = Preprocessor.invert_if_black_on_white(img)
-
-                    # 4. Crop breast region
-                    cropped = Preprocessor.detect_breast_region(img, return_only_cropped_image=True)
-                    if cropped is None:
-                        print(f"Breast region detection failed for {input_path}, using original image.")
-                        cropped = img  # Fallback to original if detection fails
-
-                    # 5. Normalize
-                    normalized = cv2.normalize(cropped, None, 0, 255, cv2.NORM_MINMAX) # type: ignore
-
-                    # 6. Increase contrast with CLAHE (if specified)
-                    if apply_clahe:
-                        clahe = cv2.createCLAHE(clipLimit=clahe_clip_limit,
-                                                tileGridSize=(8,8))
-                        normalized = clahe.apply(normalized)
-
-                    # 7. Pad to square
-                    h, w = normalized.shape
-                    max_dim = max(h, w)
-                    padded = np.zeros((max_dim, max_dim), dtype=np.uint8)
-                    y_offset = (max_dim - h) // 2
-                    x_offset = (max_dim - w) // 2
-                    padded[y_offset:y_offset+h, x_offset:x_offset+w] = normalized
-
-                    # 8. Resize
-                    resized = cv2.resize(padded, resize_shape,
-                                         interpolation=cv2.INTER_AREA)
+                    resized_rgb = Preprocessor.preprocess_image(input_path)
 
                     # 9. Save processed image
-                    cv2.imwrite(output_path, resized)
+                    cv2.imwrite(output_path, resized_rgb)
                     processed_count += 1
 
                     if processed_count % 100 == 0:
