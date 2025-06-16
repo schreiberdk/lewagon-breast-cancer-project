@@ -322,7 +322,8 @@ class Preprocessor:
                          resize_shape=(224, 224),
                          apply_clahe=True,
                          clahe_clip_limit=2.0,
-                         file_exts=('.jpg', '.jpeg', '.png', '.dcm')):
+                         file_exts=('.jpg', '.jpeg', '.png', '.dcm'),
+                         test_mode=False):
         """
         Full preprocessing pipeline for single mammogram image.
         This function processes images in the following way:
@@ -416,18 +417,12 @@ class Preprocessor:
             # print(f'Image dtype after 2. inversion: {img.dtype}')
 
             # 3. Crop breast region
-            # cropped = Preprocessor.detect_breast_region(img, return_only_cropped_image=True)
-            cropped = Preprocessor.detect_breast_region_optimized(img)
-            # print(f'Image shape after 3. breast region detection: {cropped.shape if cropped is not None else "None"}')
-            # print(f'Image dtype after 3. breast region detection: {cropped.dtype if cropped is not None else "None"}')
-            # if cropped is None:
-                # Simple intensity thresholding fallback
-                # print(f"Breast region detection failed for {img}, using fallback method.")
-                # _, thresh_fallback = cv2.threshold(img, 0.1*255, 255, cv2.THRESH_BINARY)
-                # cropped = largest_connected_component(thresh_fallback)
-
-            if cropped is None:
-                # If breast region detection fails, use original image
+            mask = Preprocessor.detect_breast_region_optimized(img)
+            if mask is not None:
+                # Get bounding box from mask
+                x, y, w, h = cv2.boundingRect(mask)
+                cropped = img[y:y+h, x:x+w]
+            else:
                 print(f"Breast region detection failed for {img} images, using original image.")
                 cropped = img  # Fallback to original if detection fails
 
@@ -502,6 +497,8 @@ class Preprocessor:
             # print(f'Image dtype after 8. RGB conversion: {resized_rgb.dtype}')
 
             # 8. Return processed image
+            if test_mode:
+                return resized_rgb, resized, padded, normalized, cropped, mask, img
             return resized_rgb
 
         except Exception as e:
