@@ -331,10 +331,11 @@ class Preprocessor:
         2. Inverts if black-on-white image
         3. Crops breast regions
         4. Applies CLAHE contrast enhancement if specified
-        5. Normalizes pixel values
-        6. Pads images to square
-        7. Resizes to target dimensions
-        8. Return processed image as NumPy array
+        5. Pads images to square
+        6. Resizes to target dimensions
+        7. Normalizes pixel values to [0, 1]
+        8. Turns image to 3-channel RGB format for ML models
+        9. Return processed image as NumPy array
 
         Args:
             image: Input image (as file path)
@@ -342,6 +343,7 @@ class Preprocessor:
             apply_clahe: Whether to apply contrast enhancement
             clahe_clip_limit: CLAHE contrast limit
             file_exts: Supported file extensions
+            test_mode: If True, returns intermediate steps for debugging
         """
 
         # Initialize variables
@@ -387,34 +389,18 @@ class Preprocessor:
         if img is None:
             raise ValueError(f"Could not read image from {image}")
 
-        # print(f'Image shape after reading: {img.shape}')
-        # print(f'Maximum pixel value after reading: {img.max()}')
-        # print(f'Minimum pixel value after reading: {img.min()}')
-        # print(f'Image dtype after reading: {img.dtype}')
-
         # Convert to uint8 if necessary
         if img.dtype == np.float32 or img.dtype == np.float64:
             img = np.clip(img, 0, 255)
             img = img.astype(np.uint8)
-        # print(f'Image shape after normalization: {img.shape}')
-        # print(f'Maximum pixel value after normalization: {img.max()}')
-        # print(f'Minimum pixel value after normalization: {img.min()}')
-        # print(f'Image dtype after normalization: {img.dtype}')
 
         # Convert to grayscale if needed
         if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)# Convert 3-channel → 1-channel
 
-        # print(f'Image shape after grayscale: {img.shape}')
-        # print(f'Maximum pixel value after grayscale: {img.max()}')
-        # print(f'Minimum pixel value after grayscale: {img.min()}')
-        # print(f'Image dtype after grayscale: {img.dtype}')
-
         try:
             # 2. Invert if black-on-white
             img = Preprocessor.invert_if_black_on_white(img)
-            # print(f'Image shape after 2. inversion: {img.shape}')
-            # print(f'Image dtype after 2. inversion: {img.dtype}')
 
             # 3. Crop breast region
             mask = Preprocessor.detect_breast_region_optimized(img)
@@ -430,7 +416,6 @@ class Preprocessor:
             if apply_clahe:
                 if cropped.dtype != np.uint8:
                     cropped = np.clip(cropped, 0, 255).astype(np.uint8)
-                # print(f'Image dtype before 5. CLAHE: {cropped.dtype}')
 
                 # Check for contrast variation
                 if np.ptp(cropped) == 0:  # All pixels identical
@@ -438,20 +423,9 @@ class Preprocessor:
                 else:
                     clahe = cv2.createCLAHE(clipLimit=clahe_clip_limit, tileGridSize=(8,8))
                     cropped = clahe.apply(cropped)
-                # print(f'Image shape after 5. CLAHE: {cropped.shape}')
-                # print(f'Maximum pixel value after 5. CLAHE: {cropped.max()}')
-                # print(f'Minimum pixel value after 5. CLAHE: {cropped.min()}')
-                # print(f'Image dtype after 5. CLAHE: {cropped.dtype}')
 
-            # 5. Normalize to [0, 1] for ML models
-            normalized = cv2.normalize(cropped, None, 0, 1, cv2.NORM_MINMAX).astype(np.float32) # type: ignore
-            # print(f'Image shape after 4. normalization: {normalized.shape}')
-            # print(f'Maximum pixel value after 4. normalization: {normalized.max()}')
-            # print(f'Minimum pixel value after 4. normalization: {normalized.min()}')
-            # print(f'Image dtype after 4. normalization: {normalized.dtype}')
-
-            # 6. Pad to square
-            h, w = normalized.shape
+            # 5. Pad to square
+            h, w = cropped.shape
             # Add dimension validation
             if h == 0 or w == 0:
                 print(f"Invalid dimensions after cropping: {h}x{w}")
@@ -459,16 +433,7 @@ class Preprocessor:
 
             # Ensure square padding works for all aspect ratios
             max_dim = max(h, w)
-            # if max_dim == h:
-                # print(f'Padding width {w} to match height {h}')
-            # else:
-                # print(f'Padding height {h} to match width {w}')
-            # print(f'Maximum dimension for padding: {max_dim}')
             padded = np.zeros((max_dim, max_dim), dtype=np.uint8)
-            # print(f'Padded shape: {padded.shape}')
-            # print(f'Maximum pixel value in padded: {padded.max()}')
-            # print(f'Minimum pixel value in padded: {padded.min()}')
-            # print(f'Image dtype after padding: {padded.dtype}')
             y_offset = (max_dim - h) // 2
             x_offset = (max_dim - w) // 2
 
@@ -476,29 +441,24 @@ class Preprocessor:
             padded[
                 max(0, y_offset):min(y_offset+h, max_dim),
                 max(0, x_offset):min(x_offset+w, max_dim)
-            ] = normalized[
+            ] = cropped[
                 max(0, -y_offset):min(h, max_dim-y_offset),
                 max(0, -x_offset):min(w, max_dim-x_offset)
             ]
 
-            # 7. Resize
+            # 6. Resize
             resized = cv2.resize(padded, resize_shape,
                                  interpolation=cv2.INTER_AREA)
-            # print(f'Image shape after 7. resizing: {resized.shape}')
-            # print(f'Maximum pixel value after 7. resizing: {resized.max()}')
-            # print(f'Minimum pixel value after 7. resizing: {resized.min()}')
-            # print(f'Image dtype after 7. resizing: {resized.dtype}')
+
+            # 7. Normalize pixel values to [0, 1]
+            normalized = resized.astype(np.float32) / 255.0
 
             # 8. Convert grayscale to 3-channel RGB (for ML models)
-            resized_rgb = cv2.cvtColor((resized * 255).astype(np.uint8), cv2.COLOR_GRAY2RGB)
-            # print(f'Image shape after 8. RGB conversion: {resized_rgb.shape}')
-            # print(f'Maximum pixel value after 8. RGB conversion: {resized_rgb.max()}')
-            # print(f'Minimum pixel value after 8. RGB conversion: {resized_rgb.min()}')
-            # print(f'Image dtype after 8. RGB conversion: {resized_rgb.dtype}')
+            resized_rgb = cv2.cvtColor(normalized, cv2.COLOR_GRAY2RGB)
 
             # 8. Return processed image
             if test_mode:
-                return resized_rgb, resized, padded, normalized, cropped, mask, img
+                return resized_rgb, normalized, resized, padded, cropped, mask, img
             return resized_rgb
 
         except Exception as e:
