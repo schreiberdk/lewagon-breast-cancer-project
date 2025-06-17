@@ -3,7 +3,6 @@ from fastapi.responses import StreamingResponse
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 from classification.ml_logic.preprocessor import Preprocessor
-from segmentation.ml_logic.preprocessor import Preprocessor
 import numpy as np
 from PIL import Image, ImageOps
 import io
@@ -21,8 +20,8 @@ def index():
 
 
 # --------------------------- CLASSIFICATION -----------------------------------
-app.state.modelclass = load_model("models/CNN_Breast_Cancer3.keras",
-                                compile=False)
+app.state.modelclass = load_model(
+    "models/EfficientNetB0_mammography_model_16_6_2025.keras", compile=False)
 app.state.preprocessor = Preprocessor()
 
 @app.post('/classification')
